@@ -4,6 +4,7 @@ import pyaudio
 import pyogg
 import MTest
 import json
+import webrtcvad
 
 # pyogg library -> https://github.com/TeamPyOgg/PyOgg/tree/master/pyogg
 
@@ -38,9 +39,33 @@ class BaseAudioStreamReceiver:
         pAudio.terminate()
 
     def readAudioStream(self, stream):
-        for i in range(200): # 4 seconds
+        vad = webrtcvad.Vad()
+        # Run the VAD on 10 ms of silence and 16000 sampling rate
+        sample_rate = 16000
+        frame_duration = 10  # in ms
+
+        isNoSpeechPrev = 0
+        isNoSpeechPrevX2 = 0
+
+        for i in range(400): # 8 seconds
             data = stream.read(self.CHUNK)
             self.frames.append(data)
+
+            if i >= 150:
+                isNoSpeech = 0
+                for jIndex in range(len(self.frames[i]) - 1):
+                    oneByte = (self.frames[i][jIndex]).to_bytes(2, byteorder='big')
+                    frame = oneByte * int(sample_rate * frame_duration / 1000)
+                    if vad.is_speech(frame, sample_rate) == False:
+                        isNoSpeech += 1
+
+                print("Is no speech: ", isNoSpeech)
+                if isNoSpeech >= 15 and isNoSpeechPrev >= 10 and isNoSpeechPrevX2 >= 7:
+                    # print("Speak doesn't exist")
+                    break
+                isNoSpeechPrev = isNoSpeech
+                if i % 3 == 0:
+                    isNoSpeechPrevX2 = isNoSpeech
 
     def encodeToOpus(self):
         fileName = time.time()
@@ -87,8 +112,8 @@ class BaseAudioStreamReceiver:
         # We've finished writing the file
         ogg_opus_writer.close()
 
-        impl = SpeechToTextImpl()
-        MTest.MTest().mFoo("%s" % fileName, impl)
+        # impl = SpeechToTextImpl()
+        # MTest.MTest().mFoo("%s" % fileName, impl)
 
         self.encodeToOpus()
 
