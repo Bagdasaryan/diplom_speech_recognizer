@@ -11,7 +11,7 @@ class MTest:
         FOLDER_ID = "b1g395ej0iqqcob4b562" # Идентификатор каталога
         OAUTH_KEY = "AQVNy9xEpeS-2VHWRkl1gBHaRpmUwAVK4E3Mtr_B" # oAuth key
 
-        audioFile = "D:/Program Files/JetBrains/Projects/RealTimeSpeechRecognizer/AudioStreamReceiver/%s.ogg" % fileName
+        audioFile = "D:/Program Files/JetBrains/Projects/RealTimeSpeechRecognizer/AudioStreamReceiver/%s" % fileName
 
         with open(audioFile, "rb") as f:
             data = f.read()

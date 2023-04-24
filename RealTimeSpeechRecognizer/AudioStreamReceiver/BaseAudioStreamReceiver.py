@@ -5,7 +5,9 @@ import pyogg
 import MTest
 import json
 import webrtcvad
+import wave
 from threading import Thread
+from RealTimeSpeechRecognizer.VoiceDifferentiation.Differentiation import VDifferentiation
 
 # pyogg library -> https://github.com/TeamPyOgg/PyOgg/tree/master/pyogg
 
@@ -15,8 +17,8 @@ class BaseAudioStreamReceiver:
     sound = True
     CHUNK = 1024
     FORMAT = pyaudio.paInt16
-    CHANNELS = 2
-    RATE = 44100
+    CHANNELS = 1
+    RATE = 48000 # 44100
     # RECORD_SECONDS = 1000
     # pAudio = pyaudio.PyAudio()
 
@@ -24,6 +26,8 @@ class BaseAudioStreamReceiver:
     frames = []
 
     indexOfStereoMixer = 2
+
+    recordedFilesNames = []
 
     pAudio = pyaudio.PyAudio()
     stream = pAudio.open(
@@ -46,10 +50,12 @@ class BaseAudioStreamReceiver:
         sample_rate = 16000
         frame_duration = 10  # in ms
 
-        isNoSpeechPrev = 0
-        isNoSpeechPrevX2 = 0
-
         mIndex = 0
+
+        previousNum = 0
+        countOfRepeats = 0
+
+        previousNumArr = []
         for i in range(10000):  # 8 seconds
             data = self.stream.read(self.CHUNK)
             self.frames.append(data)
@@ -66,54 +72,39 @@ class BaseAudioStreamReceiver:
                     if vad.is_speech(frame, sample_rate) == False:
                         isNoSpeech += 1
 
-                print("Is no speech: ", isNoSpeech)
-                if isNoSpeech >= 15 and isNoSpeechPrev >= 10 and isNoSpeechPrevX2 >= 7:
-                    print("Speak doesn't exist")
+                # print("No speech: ", isNoSpeech)
+
+                if mIndex == 1:
+                    previousNum = isNoSpeech
+
+                #if isNoSpeech >= 40 and previousNum >= 40:
+                if isNoSpeech >= 32 and previousNum >= 32: # (sum(previousNumArr) / len(previousNumArr)) >= 20 and len(previousNumArr) > 5:
+                    countOfRepeats += 1
+                else:
+                    previousNum = isNoSpeech
+                    countOfRepeats = 0
+                    previousNumArr.append(isNoSpeech)
+
+                if countOfRepeats > 5:
+                    # print("Speak doesn't exist")
                     # TODO: call frame to ogg writer function(frames[]) and continue loop
                     thread = Thread(target=self.threadedEncodToOpus, args=(self.frames,))
                     thread.start()
                     thread.join()
                     mIndex = 0
-                    self.frames = []
-
-                    isNoSpeechPrev = 0
-                    isNoSpeechPrevX2 = 0
-
-                isNoSpeechPrev = isNoSpeech
-                if mIndex % 3 == 0:
-                    isNoSpeechPrevX2 = isNoSpeech
-
-    # def readAudioStream(self, stream):
-    #     vad = webrtcvad.Vad()
-    #     # Run the VAD on 10 ms of silence and 16000 sampling rate
-    #     sample_rate = 16000
-    #     frame_duration = 10  # in ms
-    #
-    #     isNoSpeechPrev = 0
-    #     isNoSpeechPrevX2 = 0
-    #
-    #     for i in range(400): # 8 seconds
-    #         data = stream.read(self.CHUNK)
-    #         self.frames.append(data)
-    #
-    #         if i >= 150:
-    #             isNoSpeech = 0
-    #             for jIndex in range(len(self.frames[i]) - 1):
-    #                 oneByte = (self.frames[i][jIndex]).to_bytes(2, byteorder='big')
-    #                 frame = oneByte * int(sample_rate * frame_duration / 1000)
-    #                 if vad.is_speech(frame, sample_rate) == False:
-    #                     isNoSpeech += 1
-    #
-    #             print("Is no speech: ", isNoSpeech)
-    #             if isNoSpeech >= 15 and isNoSpeechPrev >= 10 and isNoSpeechPrevX2 >= 7:
-    #                 # print("Speak doesn't exist")
-    #                 break
-    #             isNoSpeechPrev = isNoSpeech
-    #             if i % 3 == 0:
-    #                 isNoSpeechPrevX2 = isNoSpeech
+                    # self.frames = []
 
     def threadedEncodToOpus(self, frameList):
         fileName = time.time()
+        # Create an OggOpusWriter
+        output_filename = "%s"%fileName
+
+        # Save to wav format
+        with wave.open(output_filename+".wav", "wb") as file:
+            file.setnchannels(self.CHANNELS)
+            file.setsampwidth(self.pAudio.get_sample_size(pyaudio.paInt16))
+            file.setframerate(self.RATE)
+            file.writeframes(b''.join(frameList))
 
         # filename = "result"
 
@@ -124,17 +115,15 @@ class BaseAudioStreamReceiver:
         opus_buffered_encoder.set_channels(self.CHANNELS)
         opus_buffered_encoder.set_frame_size(20)  # milliseconds
 
-        # Create an OggOpusWriter
-        output_filename = "%s"%fileName + ".ogg"
         # print("Writing OggOpus file to '{:s}'".format(output_filename))
         ogg_opus_writer = pyogg.OggOpusWriter(
-            output_filename,
+            output_filename+".ogg",
             opus_buffered_encoder
         )
 
         # Encode the PCM data
         ogg_opus_writer.write(
-            memoryview(bytearray(b''.join(self.frames)))
+            memoryview(bytearray(b''.join(frameList)))
         )
 
         # opus_buffered_encoder = None
@@ -142,64 +131,30 @@ class BaseAudioStreamReceiver:
         # We've finished writing the file
         ogg_opus_writer.close()
 
+        self.recordedFilesNames.append("%s"%fileName + ".ogg")
+
+        self.frames = []
+
+        differentiationThread = Thread(target=self.threadVoiceDifferentiate(), args=())
+        differentiationThread.start()
+        differentiationThread.join()
+
+        # thread = Thread(target=self.threadRecognizeSpeech, args=())
+        # thread.start()
+        # thread.join()
+
+    def threadVoiceDifferentiate(self):
+        VDifferentiation().differentiate("%s" % self.recordedFilesNames[0])
+
+    def threadRecognizeSpeech(self):
+        impl = SpeechToTextImpl()
+        MTest.MTest().mFoo("%s" % self.recordedFilesNames[0], impl)
+        self.recordedFilesNames.pop(0)
+
     def runThreadedRecording(self):
         thread = Thread(target=self.threadedAudioStream, args=())
         thread.start()
         thread.join()
-
-    # def encodeToOpus(self):
-    #     fileName = time.time()
-    #     self.frames = []
-    #
-    #     pAudio = pyaudio.PyAudio()
-    #     stream = pAudio.open(
-    #         format=self.FORMAT,
-    #         channels=self.CHANNELS,
-    #         rate=self.RATE,
-    #         input=True,
-    #         input_device_index=self.indexOfStereoMixer,
-    #         frames_per_buffer=self.CHUNK
-    #     )
-    #
-    #     self.readAudioStream(stream)
-    #     self._clearStream(stream, pAudio)
-    #     pAudio.terminate()
-    #
-    #     thread = Thread(target=self.threadedAudioStream, args=(stream,))
-    #     thread.start()
-    #     thread.join()
-    #
-    #     # filename = "result"
-    #
-    #     # Create a OpusBufferedEncoder
-    #     opus_buffered_encoder = pyogg.OpusBufferedEncoder()
-    #     opus_buffered_encoder.set_application("audio")
-    #     opus_buffered_encoder.set_sampling_frequency(48000)
-    #     opus_buffered_encoder.set_channels(self.CHANNELS)
-    #     opus_buffered_encoder.set_frame_size(20)  # milliseconds
-    #
-    #     # Create an OggOpusWriter
-    #     output_filename = "%s"%fileName + ".ogg"
-    #     # print("Writing OggOpus file to '{:s}'".format(output_filename))
-    #     ogg_opus_writer = pyogg.OggOpusWriter(
-    #         output_filename,
-    #         opus_buffered_encoder
-    #     )
-    #
-    #     # Encode the PCM data
-    #     ogg_opus_writer.write(
-    #         memoryview(bytearray(b''.join(self.frames)))
-    #     )
-    #
-    #     # opus_buffered_encoder = None
-    #
-    #     # We've finished writing the file
-    #     ogg_opus_writer.close()
-    #
-    #     # impl = SpeechToTextImpl()
-    #     # MTest.MTest().mFoo("%s" % fileName, impl)
-    #
-    #     self.encodeToOpus()
 
 
 class SpeechToTextImpl(MTest.SpeechToTextListener):
