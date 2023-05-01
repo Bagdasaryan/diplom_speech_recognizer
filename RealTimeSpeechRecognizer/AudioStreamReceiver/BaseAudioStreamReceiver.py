@@ -6,6 +6,7 @@ import MTest
 import json
 import webrtcvad
 import wave
+import soundfile
 from threading import Thread
 from RealTimeSpeechRecognizer.VoiceDifferentiation.Differentiation import VDifferentiation
 
@@ -28,6 +29,9 @@ class BaseAudioStreamReceiver:
     indexOfStereoMixer = 2
 
     recordedFilesNames = []
+
+    isVoiceDifferentiated = False
+    indexOfFileForDifferentiation = 0
 
     pAudio = pyaudio.PyAudio()
     stream = pAudio.open(
@@ -56,6 +60,7 @@ class BaseAudioStreamReceiver:
         countOfRepeats = 0
 
         previousNumArr = []
+
         for i in range(10000):  # 8 seconds
             data = self.stream.read(self.CHUNK)
             self.frames.append(data)
@@ -74,27 +79,30 @@ class BaseAudioStreamReceiver:
 
                 # print("No speech: ", isNoSpeech)
 
-                if mIndex == 1:
-                    previousNum = isNoSpeech
+                # if mIndex == 1:
+                #     previousNum = isNoSpeech
 
                 #if isNoSpeech >= 40 and previousNum >= 40:
-                if isNoSpeech >= 32 and previousNum >= 32: # (sum(previousNumArr) / len(previousNumArr)) >= 20 and len(previousNumArr) > 5:
+                if isNoSpeech >= 35 and previousNum >= 35:
                     countOfRepeats += 1
                 else:
                     previousNum = isNoSpeech
                     countOfRepeats = 0
                     previousNumArr.append(isNoSpeech)
 
-                if countOfRepeats > 5:
+                if countOfRepeats > 1:
                     # print("Speak doesn't exist")
                     # TODO: call frame to ogg writer function(frames[]) and continue loop
-                    thread = Thread(target=self.threadedEncodToOpus, args=(self.frames,))
-                    thread.start()
-                    thread.join()
+                    self.threadedEncodToOpus(self.frames)
+                    # self.threadOpus = Thread(target=self.threadedEncodToOpus, args=(self.frames,))
+                    # self.threadOpus.start()
+                    # thread.join()
                     mIndex = 0
                     # self.frames = []
 
     def threadedEncodToOpus(self, frameList):
+        # self.frames.append(b'\x00')
+
         fileName = time.time()
         # Create an OggOpusWriter
         output_filename = "%s"%fileName
@@ -131,20 +139,29 @@ class BaseAudioStreamReceiver:
         # We've finished writing the file
         ogg_opus_writer.close()
 
-        self.recordedFilesNames.append("%s"%fileName + ".ogg")
+        self.recordedFilesNames.append("%s"%fileName)
 
         self.frames = []
 
-        differentiationThread = Thread(target=self.threadVoiceDifferentiate(), args=())
-        differentiationThread.start()
-        differentiationThread.join()
+        self.isVoiceDifferentiated = True
+        print("Filename: ", fileName)
+
+        # if self.isVoiceDifferentiated:
+        #     self.isVoiceDifferentiated = False
+            # differentiationThread = Thread(target=self.threadVoiceDifferentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation]), args=())
+            # differentiationThread.start()
 
         # thread = Thread(target=self.threadRecognizeSpeech, args=())
         # thread.start()
         # thread.join()
 
     def threadVoiceDifferentiate(self):
-        VDifferentiation().differentiate("%s" % self.recordedFilesNames[0])
+        while self.indexOfFileForDifferentiation < 500:
+            # print("Recognition started")
+            if self.indexOfFileForDifferentiation < len(self.recordedFilesNames):
+                VDifferentiation().differentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation])
+                self.indexOfFileForDifferentiation += 1
+                self.isVoiceDifferentiated = False
 
     def threadRecognizeSpeech(self):
         impl = SpeechToTextImpl()
@@ -154,7 +171,7 @@ class BaseAudioStreamReceiver:
     def runThreadedRecording(self):
         thread = Thread(target=self.threadedAudioStream, args=())
         thread.start()
-        thread.join()
+        # thread.join()
 
 
 class SpeechToTextImpl(MTest.SpeechToTextListener):
@@ -168,6 +185,15 @@ class SpeechToTextImpl(MTest.SpeechToTextListener):
 
 
 if __name__ == "__main__":
+    print("Start program")
     basr = BaseAudioStreamReceiver()
-    basr.runThreadedRecording()
-    # basr.encodeToOpus()
+    # basr.runThreadedRecording()
+
+    thread = Thread(target=basr.threadedAudioStream, args=())
+    thread.start()
+
+    tVoiceDiff = Thread(target=basr.threadVoiceDifferentiate, args=())
+    tVoiceDiff.start()
+
+    thread.join()
+    tVoiceDiff.join()
