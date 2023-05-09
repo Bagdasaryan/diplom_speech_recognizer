@@ -3,12 +3,12 @@ import time
 import pyaudio
 import pyogg
 import MTest
-import json
 import webrtcvad
 import wave
-import soundfile
 from threading import Thread
 from RealTimeSpeechRecognizer.VoiceDifferentiation.Differentiation import VDifferentiation
+from RealTimeSpeechRecognizer.VoiceDifferentiation.Differentiation import AudioTrimListener
+import time
 
 # pyogg library -> https://github.com/TeamPyOgg/PyOgg/tree/master/pyogg
 
@@ -25,13 +25,18 @@ class BaseAudioStreamReceiver:
 
     stereoMixerName = 'Stereo Mix (Realtek(R) Audio)'
     frames = []
-
-    indexOfStereoMixer = 2
-
     recordedFilesNames = []
+    # Сюда записываются параметры обрезанных файлов - [[FILE_1, USER_1], [FILE_2, USER_2], ..., [FILE_N, USER_N]]
+    differentiatedAudioTrimList = []
 
     isVoiceDifferentiated = False
+    isSpeechRecognized = True
+
+    indexOfStereoMixer = 2
     indexOfFileForDifferentiation = 0
+
+    # Thread type
+    speechRecognitionThread = None
 
     pAudio = pyaudio.PyAudio()
     stream = pAudio.open(
@@ -123,7 +128,6 @@ class BaseAudioStreamReceiver:
         opus_buffered_encoder.set_channels(self.CHANNELS)
         opus_buffered_encoder.set_frame_size(20)  # milliseconds
 
-        # print("Writing OggOpus file to '{:s}'".format(output_filename))
         ogg_opus_writer = pyogg.OggOpusWriter(
             output_filename+".ogg",
             opus_buffered_encoder
@@ -144,7 +148,6 @@ class BaseAudioStreamReceiver:
         self.frames = []
 
         self.isVoiceDifferentiated = True
-        print("Filename: ", fileName)
 
         # if self.isVoiceDifferentiated:
         #     self.isVoiceDifferentiated = False
@@ -156,38 +159,60 @@ class BaseAudioStreamReceiver:
         # thread.join()
 
     def threadVoiceDifferentiate(self):
+        impl = DifferentiatedAudioTrimImpl()
+        impl.setConstructor(self)
         while self.indexOfFileForDifferentiation < 500:
-            # print("Recognition started")
             if self.indexOfFileForDifferentiation < len(self.recordedFilesNames):
-                VDifferentiation().differentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation])
+                VDifferentiation().differentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation], impl)
                 self.indexOfFileForDifferentiation += 1
                 self.isVoiceDifferentiated = False
+                # TODO: Call speech recognizing in thread
+                if self.speechRecognitionThread is None or self.isSpeechRecognized:
+                    print("Differentiation start")
+                    self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
+                    self.speechRecognitionThread.start()
 
     def threadRecognizeSpeech(self):
         impl = SpeechToTextImpl()
-        MTest.MTest().mFoo("%s" % self.recordedFilesNames[0], impl)
-        self.recordedFilesNames.pop(0)
+        impl.setConstructor(self)
+        self.someFoo(impl)
 
-    def runThreadedRecording(self):
-        thread = Thread(target=self.threadedAudioStream, args=())
-        thread.start()
-        # thread.join()
+    def someFoo(self, impl):
+        if len(self.differentiatedAudioTrimList) > 0:
+            if self.isSpeechRecognized:
+                self.isSpeechRecognized = False
+                if len(self.recordedFilesNames) > 0:
+                    MTest.MTest().mFoo("%s" % self.recordedFilesNames[0], impl)
+                    self.recordedFilesNames.pop(0)
+            #     self.speechRecognitionThread.join()
+            #     self.speechRecognitionThread.start()
+            # self.someFoo(impl)
 
 
 class SpeechToTextImpl(MTest.SpeechToTextListener):
-    audioStreamObject = BaseAudioStreamReceiver()
+    exemplar = None
+    def setConstructor(self, main_class_exemplar):
+        self.exemplar = main_class_exemplar
 
     def doAfterTextRecognition(self, recognizedText):
-        recognizedObject = json.loads(recognizedText)
-        print("Result: ", recognizedObject["result"])
-        # basr = BaseAudioStreamReceiver()
-        # basr.encodeToOpus()
+        print("Index of file for diff: ")
+        # recognizedObject = json.loads(recognizedText)
+        # print("Result: ", recognizedObject["result"])
+        # self.exemplar.differentiatedAudioTrimList.pop(0)
+        self.exemplar.isSpeechRecognized = True
+
+class DifferentiatedAudioTrimImpl(AudioTrimListener):
+    exemplar = None
+    def setConstructor(self, main_class_exemplar):
+        self.exemplar = main_class_exemplar
+
+    def doAfterTrimL(self, list_of_trimmed_audio: BaseAudioStreamReceiver):
+        self.exemplar.differentiatedAudioTrimList.append(list_of_trimmed_audio)
 
 
 if __name__ == "__main__":
     print("Start program")
     basr = BaseAudioStreamReceiver()
-    # basr.runThreadedRecording()
 
     thread = Thread(target=basr.threadedAudioStream, args=())
     thread.start()

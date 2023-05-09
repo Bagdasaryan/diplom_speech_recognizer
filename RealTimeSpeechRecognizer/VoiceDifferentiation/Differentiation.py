@@ -6,8 +6,12 @@ from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import einops
 
+class AudioTrimListener:
+    def doAfterTrimL(self, list_of_trimmed_audio):
+        pass
+
 class VDifferentiation:
-    def differentiate(self, fileName):
+    def differentiate(self, fileName, listener: AudioTrimListener()):
         pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization",
                                             use_auth_token="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")
 
@@ -20,9 +24,11 @@ class VDifferentiation:
             print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
             interv = [turn.start, turn.end]
             intervals.append(interv)
-        self.trim_audio(intervals, fileName, fileName)
+        self.trim_audio(intervals, fileName, fileName, listener)
 
-    def trim_audio(self, intervals, input_file_path, output_file_path):
+    def trim_audio(self, intervals, input_file_path, output_file_path, listener: AudioTrimListener()):
+        list_of_trimmed_audio = [] # [audio_file_name, speaker_id]
+
         # load the audio file
         audio = AudioSegment.from_file(input_file_path+".wav")
 
@@ -36,3 +42,8 @@ class VDifferentiation:
 
             # export the segment to a file
             segment.export(output_file_path_i, format='wav')
+
+            # 0 - first speaker; 1 - second speaker
+            list_of_trimmed_audio.append([f"res_{output_file_path}_{i}.wav", 0 if i % 2 == 0 else 1])
+
+        listener.doAfterTrimL(list_of_trimmed_audio)
