@@ -1,5 +1,3 @@
-import time
-
 import pyaudio
 import pyogg
 import MTest
@@ -34,6 +32,7 @@ class BaseAudioStreamReceiver:
 
     indexOfStereoMixer = 2
     indexOfFileForDifferentiation = 0
+    indexOfRecognizedFile = 0
 
     # Thread type
     speechRecognitionThread = None
@@ -171,6 +170,10 @@ class BaseAudioStreamReceiver:
                     print("Differentiation start")
                     self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
                     self.speechRecognitionThread.start()
+                # elif self.speechRecognitionThread is not None and self.isSpeechRecognized == False:
+                #     self.speechRecognitionThread.join()
+                #     self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
+                #     self.speechRecognitionThread.start()
 
     def threadRecognizeSpeech(self):
         impl = SpeechToTextImpl()
@@ -181,8 +184,11 @@ class BaseAudioStreamReceiver:
         if len(self.differentiatedAudioTrimList) > 0:
             if self.isSpeechRecognized:
                 self.isSpeechRecognized = False
-                if len(self.recordedFilesNames) > 0:
-                    MTest.MTest().mFoo("%s" % self.recordedFilesNames[0], impl)
+                print("Call mFoo")
+                if len(self.recordedFilesNames) > 0 and self.indexOfRecognizedFile < len(self.recordedFilesNames):
+                    # MTest.MTest().mFoo("%s" % self.recordedFilesNames[self.indexOfRecognizedFile], impl)
+                    MTest.MTest().mFoo(self.differentiatedAudioTrimList[self.indexOfRecognizedFile], impl)
+                    self.indexOfRecognizedFile += 1
                     self.recordedFilesNames.pop(0)
             #     self.speechRecognitionThread.join()
             #     self.speechRecognitionThread.start()
@@ -194,11 +200,12 @@ class SpeechToTextImpl(MTest.SpeechToTextListener):
     def setConstructor(self, main_class_exemplar):
         self.exemplar = main_class_exemplar
 
-    def doAfterTextRecognition(self, recognizedText):
-        print("Index of file for diff: ")
+    def doAfterTextRecognition(self, recognizedText, isLast=False):
+        print("Result: ", recognizedText)
         # recognizedObject = json.loads(recognizedText)
         # print("Result: ", recognizedObject["result"])
-        # self.exemplar.differentiatedAudioTrimList.pop(0)
+        # if isLast:
+        #     self.exemplar.differentiatedAudioTrimList.pop(0)
         self.exemplar.isSpeechRecognized = True
 
 class DifferentiatedAudioTrimImpl(AudioTrimListener):

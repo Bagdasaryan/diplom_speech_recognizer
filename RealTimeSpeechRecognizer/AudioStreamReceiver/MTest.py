@@ -3,16 +3,20 @@ import time
 
 
 class SpeechToTextListener:
-    def doAfterTextRecognition(self, recognizedText):
+    def doAfterTextRecognition(self, recognizedText, isLast=False):
         pass
 
 
 class MTest:
     def mFoo(self, fileName, listener: SpeechToTextListener()):
+        for i in range(len(fileName)):
+            self.translateSpeechToText(fileName[i], listener, isLast=len(fileName)-1 == i)
+
+    def translateSpeechToText(self, fileName, listener: SpeechToTextListener(), isLast=False):
         # FOLDER_ID = "b1g395ej0iqqcob4b562" # Идентификатор каталога
         # OAUTH_KEY = "AQVNy9xEpeS-2VHWRkl1gBHaRpmUwAVK4E3Mtr_B" # oAuth key
         #
-        # audioFile = "D:/Program Files/JetBrains/Projects/RealTimeSpeechRecognizer/AudioStreamReceiver/%s" % fileName
+        # audioFile = "D:/Program Files/JetBrains/Projects/RealTimeSpeechRecognizer/AudioStreamReceiver/%s" % fileName[0]
         #
         # with open(audioFile, "rb") as f:
         #     data = f.read()
@@ -20,7 +24,7 @@ class MTest:
         # params = "&".join([
         #     "topic=general",
         #     "folderId=%s" % FOLDER_ID,
-        #     "lang=ru-RU",
+        #     "lang=en-US",
         #     "format=oggopus"
         # ])
         #
@@ -29,5 +33,6 @@ class MTest:
         #
         # x = requests.post(url, headers = headers, data=data)
 
-        listener.doAfterTextRecognition("recognized file: %s"%fileName) # x.text)
-        time.sleep(10)
+        # res = "User %s: %s"%(fileName[1] , x.text)
+        res = "User %s" % (fileName[1])
+        listener.doAfterTextRecognition(res, isLast=False)
