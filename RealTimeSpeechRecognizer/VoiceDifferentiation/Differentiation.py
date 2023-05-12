@@ -8,6 +8,7 @@ import torch
 from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import einops
+import wave
 
 class AudioTrimListener:
     def doAfterTrimL(self, list_of_trimmed_audio):
@@ -50,6 +51,7 @@ class VDifferentiation:
             list_of_trimmed_audio.append([f"res_{output_file_path}_{i}.wav", 0 if i % 2 == 0 else 1])
 
             file_name = "res_%s_%s"%(output_file_path, i)
+
             self.save_to_opus(file_name)
 
         listener.doAfterTrimL(list_of_trimmed_audio)
@@ -70,10 +72,10 @@ class VDifferentiation:
             opus_buffered_encoder
         )
 
-        print("Contents: ", contents)
         # Encode the PCM data
         ogg_opus_writer.write(
-            memoryview(bytearray(b''.join(contents)))
+            memoryview(bytearray(contents))
+            # memoryview(bytearray(b''.join(contents)))
         )
 
         # opus_buffered_encoder = None
