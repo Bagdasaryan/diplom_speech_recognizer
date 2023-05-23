@@ -94,7 +94,7 @@ class BaseAudioStreamReceiver:
                     countOfRepeats = 0
                     previousNumArr.append(isNoSpeech)
 
-                if countOfRepeats > 1:
+                if countOfRepeats > 4:
                     # print("Speak doesn't exist")
                     # TODO: call frame to ogg writer function(frames[]) and continue loop
                     self.threadedEncodToOpus(self.frames)
@@ -189,7 +189,7 @@ class BaseAudioStreamReceiver:
                     # MTest.MTest().mFoo("%s" % self.recordedFilesNames[self.indexOfRecognizedFile], impl)
                     MTest.MTest().mFoo(self.differentiatedAudioTrimList[self.indexOfRecognizedFile], impl)
                     self.indexOfRecognizedFile += 1
-                    self.recordedFilesNames.pop(0)
+                    # self.recordedFilesNames.pop(0)
             #     self.speechRecognitionThread.join()
             #     self.speechRecognitionThread.start()
             # self.someFoo(impl)

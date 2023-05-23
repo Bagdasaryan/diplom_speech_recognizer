@@ -41,6 +41,8 @@ class VDifferentiation:
             # extract the segment of the audio
             segment = audio[start_time * 1000:end_time * 1000]
 
+            print("Audio file: ", segment)
+
             # construct the output file path
             output_file_path_i = f"res_{output_file_path}_{i}.wav"
 
@@ -57,8 +59,19 @@ class VDifferentiation:
         listener.doAfterTrimL(list_of_trimmed_audio)
 
     def save_to_opus(self, filename):
-        with open("%s.wav"%filename, 'rb') as fd:
-            contents = fd.read()
+        # Открытие аудиофайла
+        with wave.open("%s.wav" % filename, "rb") as audio_file:
+            # Получение параметров аудиофайла
+            channels = audio_file.getnchannels()
+            sample_width = audio_file.getsampwidth()
+            frame_rate = audio_file.getframerate()
+            frames = audio_file.readframes(-1)
+
+        # Преобразование байтовых данных в массив байтов
+        contents = bytearray(frames)
+
+        # with open("%s.wav"%filename, 'rb') as fd:
+        #     contents = fd.read()
 
         # Create a OpusBufferedEncoder
         opus_buffered_encoder = pyogg.OpusBufferedEncoder()

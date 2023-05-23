@@ -1,7 +1,5 @@
 import requests
 
-import csv
-import os
 from typing import List
 
 
@@ -15,17 +13,17 @@ class MTest:
     OAUTH_KEY = "AQVNy9xEpeS-2VHWRkl1gBHaRpmUwAVK4E3Mtr_B"  # oAuth key
 
     def mFoo(self, fileName, listener: SpeechToTextListener()):
-        translatedText = self.translate(
-            texts=["Hello. How are you?", "Thanks. What are you doing?"],
-            source="en",
-            target="ru"
-        )
-        for i in range(len(translatedText)):
-            print("Translate res: ", translatedText[i])
+        # translatedText = self.translate(
+        #     texts=["Hello. How are you?", "Thanks. What are you doing?"],
+        #     source="en",
+        #     target="ru"
+        # )
+        # for i in range(len(translatedText)):
+        #     print("Translate res: ", translatedText[i])
 
         for i in range(len(fileName)):
-            # self.translateSpeechToText(fileName[i], listener, isLast=len(fileName)-1 == i)
-            self.testTranslateSpeechToText(listener)
+            self.translateSpeechToText(fileName[i], listener, isLast=len(fileName)-1 == i)
+            # self.testTranslateSpeechToText(listener)
 
     def translateSpeechToText(self, fileName, listener: SpeechToTextListener(), isLast=False):
         audioFile = "D:/Program Files/JetBrains/Projects/RealTimeSpeechRecognizer/AudioStreamReceiver/%s" % fileName[0].replace("wav", "ogg")
@@ -36,7 +34,7 @@ class MTest:
         params = "&".join([
             "topic=general",
             "folderId=%s" % self.FOLDER_ID,
-            "lang=en-US",
+            "lang=ru-RU", # en-US
             "format=oggopus"
         ])
 
@@ -44,7 +42,14 @@ class MTest:
         headers = {'Authorization': "Api-Key %s" % self.OAUTH_KEY}
 
         x = requests.post(url, headers = headers, data=data)
-        res = "User %s: %s"%(fileName[1] , x.text)
+
+        translatedText = self.translate(
+            texts=[x.text],
+            source="ru",
+            target="en"
+        )
+
+        res = "User %s: %s" % (fileName[1], translatedText[0])
 
         # res = "User %s" % (fileName[0].replace("wav", "ogg"))
         listener.doAfterTextRecognition(res, isLast=False)
