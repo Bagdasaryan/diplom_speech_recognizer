@@ -1,5 +1,4 @@
 import tkinter as tk
-from RealTimeSpeechRecognizer.AudioStreamReceiver.BaseAudioStreamReceiver import BaseAudioStreamReceiver
 
 root = tk.Tk()
 root.geometry("700x600")

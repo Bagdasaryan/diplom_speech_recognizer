@@ -1,4 +1,5 @@
 import requests
+import json
 
 from typing import List
 
@@ -59,6 +60,7 @@ class MTest:
             target=targetLanguage
         )
 
+        recognizedObject = json.loads(translatedText[0])
         res = "User %s: %s \nOriginal text: %s" % (fileName[1], translatedText[0], x.text)
 
         # res = "User %s" % (fileName[0].replace("wav", "ogg"))

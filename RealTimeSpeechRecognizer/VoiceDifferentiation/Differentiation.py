@@ -9,13 +9,15 @@ from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import einops
 import wave
+import time
+from threading import Thread
 
 class AudioTrimListener:
     def doAfterTrimL(self, list_of_trimmed_audio):
         pass
 
 class VDifferentiation:
-    def differentiate(self, fileName, listener: AudioTrimListener()):
+    def differentiate(self, fileName, isFake, listener: AudioTrimListener()):
         pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization",
                                             use_auth_token="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")
 
@@ -28,9 +30,9 @@ class VDifferentiation:
             # print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
             interv = [turn.start, turn.end]
             intervals.append(interv)
-        self.trim_audio(intervals, fileName, fileName, listener)
+        self.trim_audio(intervals, fileName, fileName, isFake, listener)
 
-    def trim_audio(self, intervals, input_file_path, output_file_path, listener: AudioTrimListener()):
+    def trim_audio(self, intervals, input_file_path, output_file_path, isFake, listener: AudioTrimListener()):
         list_of_trimmed_audio = [] # [audio_file_name, speaker_id]
 
         # load the audio file
@@ -52,15 +54,15 @@ class VDifferentiation:
 
             file_name = "res_%s_%s"%(output_file_path, i)
 
-            try:
-                self.save_to_opus(file_name)
-            except:
-                print("An exception occurred")
+            if isFake == False:
+                try:
+                    self.save_to_opus(file_name)
+                except:
+                    print("An exception occurred")
 
         listener.doAfterTrimL(list_of_trimmed_audio)
 
     def save_to_opus(self, filename):
-        # Открытие аудиофайла
         with wave.open("%s.wav" % filename, "rb") as audio_file:
             # Получение параметров аудиофайла
             channels = audio_file.getnchannels()
@@ -82,7 +84,7 @@ class VDifferentiation:
         opus_buffered_encoder.set_frame_size(20)  # milliseconds
 
         ogg_opus_writer = pyogg.OggOpusWriter(
-            filename+".ogg",
+            filename + ".ogg",
             opus_buffered_encoder
         )
 
@@ -91,8 +93,3 @@ class VDifferentiation:
             memoryview(bytearray(contents))
             # memoryview(bytearray(b''.join(contents)))
         )
-
-        # opus_buffered_encoder = None
-
-        # We've finished writing the file
-        ogg_opus_writer.close()

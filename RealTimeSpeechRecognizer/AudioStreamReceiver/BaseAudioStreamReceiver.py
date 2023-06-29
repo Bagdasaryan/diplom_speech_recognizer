@@ -12,6 +12,203 @@ import time
 
 countOfFiles = 0
 
+#########################################
+# Design
+
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("700x600")
+root.title("Speech translator with differentiation")
+root.configure(bg="white")
+
+block1 = None
+block2 = None
+
+# FIelds
+isButtonClicked = False
+isFake = True
+
+# Первая часть
+block1 = tk.Frame(root, bg="#42AAFF")
+block1.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+button = tk.Button(root, text="Run", command=lambda: doOnBtnClicked())
+button.pack(anchor=tk.NE)
+
+label1 = tk.Button(block1, text="Choose the language to translate", borderwidth=0, relief="sunken", command=lambda: changeToOriginal())
+label1.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+OPTIONS = ["English", "Russian"]
+variable = tk.StringVar(root)
+variable.set(OPTIONS[0]) # default value
+option_menu = tk.OptionMenu(block1, variable, *OPTIONS)
+option_menu.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+
+block2 = tk.Frame(root, bg="#42AAFF")
+block2.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+# Calculate the maximum radius based on 10% of the minimum dimension
+radius = min(block2.winfo_width(), block2.winfo_height()) * 0.1
+
+# block2 = tk.Frame(root, bg="red")
+block2.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label2 = tk.Label(block2, text="Translation results", bg="white")
+label2.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+text_field = tk.Text(block2, height=15, bg="white")
+text_field.pack(anchor="w", fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+# Вторая часть
+block3 = tk.Frame(root, bg="#42AAFF")
+block3.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label3 = tk.Label(block3, text="Interface language")
+label3.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+OPTIONS = ["English", "Russian"]
+variable = tk.StringVar(root)
+variable.set(OPTIONS[0]) # default value
+option_menu = tk.OptionMenu(block3, variable, *OPTIONS)
+option_menu.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+block4 = tk.Frame(root, bg="#42AAFF")
+block4.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label4 = tk.Label(block4, text="Theme")
+label4.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+OPTIONS = ["Light", "Night"]
+variable = tk.StringVar(root)
+variable.set(OPTIONS[0]) # default value
+option_menu = tk.OptionMenu(block4, variable, *OPTIONS)
+option_menu.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+block5 = tk.Frame(root, bg="#42AAFF")
+block5.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label5 = tk.Label(block5, text="Type of translation display")
+label5.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+OPTIONS = ["In a separator window", "In the program"]
+variable = tk.StringVar(root)
+variable.set(OPTIONS[0]) # default value
+option_menu = tk.OptionMenu(block5, variable, *OPTIONS)
+option_menu.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+# Третья часть
+block6 = tk.Frame(root, bg="#42AAFF")
+block6.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label6 = tk.Label(block6, text="List of translates")
+label6.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+label7 = tk.Label(block6, text="First translate.txt")
+label7.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+label8 = tk.Label(block6, text="Second translate.txt")
+label8.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+block8 = tk.Frame(root, bg="#42AAFF")
+block8.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+label9 = tk.Label(block8, text="Sorting")
+label9.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+OPTIONS = ["By date", "By alphabet"]
+variable = tk.StringVar(root)
+variable.set(OPTIONS[0]) # default value
+option_menu = tk.OptionMenu(block8, variable, *OPTIONS)
+option_menu.pack(anchor="w", side=tk.TOP, padx=10, pady=10)
+
+# Отображение кнопок
+frame = tk.Frame(root)
+frame.pack(side=tk.BOTTOM, pady=20)
+
+home_button = tk.Button(frame, text="Home")
+home_button.pack(anchor="w", side=tk.LEFT, padx=10)
+
+settings_button = tk.Button(frame, text="Settings")
+settings_button.pack(anchor="w", side=tk.LEFT, padx=10)
+
+translates_button = tk.Button(frame, text="Translates")
+translates_button.pack(anchor="w", side=tk.LEFT, padx=10)
+
+textArr = [
+    "User 1: Искусственный интеллект это область компьютерных наук которая занимается разработкой определенных систем",
+    "User 1: Cпособных выполнять задачи требующие человеческого интеллекта",
+    "User 2: На моделирование различных аспектов человеческого мышления, включая распознавание образов",
+    "User 2: Обучение, планирование принятие решений и адаптацию к изменяющейся",
+    "User 1: Основной целью искусственного интеллекта является разработка алгоритмов и моделей которые позволяют компьютерам имитировать человеческий интеллект",
+    "User 2: Это включает в себя такие возможности",
+    "User 2: Образов обучение на основе опыта планирование принятие решений и способность адаптироваться к изменяющимся условиям",
+    "User 1: Одним из ключевых направлений исследований в области искусственного интеллекта является машинное",
+    "User 2: Машинное обучение  подход при котором компьютерные системы обучаются на основе больших объемов данных распознавать закономерности и делать прогнозы",
+    "User 1: Он опирается на различные методы такие как нейронные сети генетические",
+    "User 2: Нейронные сети являются одним из ключевых инструментов в области машинного обучения",
+    "User 2: Представляют собой систему соединенных и взаимодействующих нейронов, которые способны обрабатывать информацию и выполнять сложные задачи",
+    "User 1: Нейронные сети могут быть обучены на основе больших объемов данных",
+    "User 2: Распознавания образов прогнозирования и других приложений",
+    "User 2: Однако развитие искусственного интеллекта сталкивается с рядом сложных проблем и ограничений",
+    "User 1: Одной из главных проблем является отсутствие общего понимания того",
+    "User 1: И как его можно достичь в компьютерных системах",
+    "User 2: Существуют также этические и социальные проблемы связанные с использованием искусственного интеллекта",
+    "User 2: Вопросы конфиденциальности, безопасности и автономии систем",
+    "User 1: Исследования в области искусственного интеллекта охватывают широкий применений и отраслей промышленности",
+    "User 2: Например в медицине и может использоваться для диагностики заболеваний",
+    "User 2: Разработки лекарств и обеспечения персонализированного лечения",
+    "User 1: В автомобильной промышленности и может быть использован для создания автономных транспортных средств и повышения безопасности дорожного движения",
+    "User 2: В финансовом секторе искусственный интеллект используется для прогнозирования рыночных",
+    "User 2: Определения профилей рисков и автоматизации финансовых транзакций",
+    "User 1: Python самый популярный язык программирования для искусственного интеллекта",
+    "User 1: Он широко используется во всех отраслях промышленности благодаря своей простоте гибкости",
+    "User 2: Python это язык с открытым исходным кодом что означает что он доступен для любых",
+    "User 2: Разработчики сочтут необходимыми",
+    "User 1: Python обладает обширной коллекцией доступных библиотек и фреймворков что упрощает разработку продуктов искусственного интеллекта",
+    "User 2: Однако Python работает медленнее чем другие языки программирования и он не подходит для низкоуровневого программирования"
+
+]
+
+# Функции для кнопок
+def show_first_part():
+    block3.pack_forget()
+    block4.pack_forget()
+    block5.pack_forget()
+    block6.pack_forget()
+    block8.pack_forget()
+    settings_button.configure(bg="white")
+    translates_button.configure(bg="white")
+    home_button.configure(bg="#9ACEEB")
+    block1.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+    block2.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+def show_second_part():
+    block1.pack_forget()
+    block2.pack_forget()
+    block6.pack_forget()
+    block8.pack_forget()
+    home_button.configure(bg="white")
+    translates_button.configure(bg="white")
+    settings_button.configure(bg="#9ACEEB")
+    block3.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+    block4.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+    block5.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+
+def show_third_part():
+    block1.pack_forget()
+    block2.pack_forget()
+    block3.pack_forget()
+    block4.pack_forget()
+    block5.pack_forget()
+    home_button.configure(bg="white")
+    settings_button.configure(bg="white")
+    translates_button.configure(bg="#9ACEEB")
+    block6.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+    block8.pack(side=tk.TOP, padx=20, pady=10, anchor=tk.W)
+#########################################
+
 class BaseAudioStreamReceiver:
     sound = True
     CHUNK = 1024
@@ -37,9 +234,9 @@ class BaseAudioStreamReceiver:
     # Thread type
     speechRecognitionThread = None
 
-    IS_NO_SPEECH_NUM = 30
+    IS_NO_SPEECH_NUM = 18
     COUNT_OF_REPEATS = 3
-    TRANSLATE_LANGUAGE = "E"
+    TRANSLATE_LANGUAGE = "R"
 
     pAudio = pyaudio.PyAudio()
     stream = pAudio.open(
@@ -69,6 +266,7 @@ class BaseAudioStreamReceiver:
 
         previousNumArr = []
 
+        print("VAD started")
         for i in range(10000):  # 8 seconds
             data = self.stream.read(self.CHUNK)
             self.frames.append(data)
@@ -162,22 +360,23 @@ class BaseAudioStreamReceiver:
         # thread.join()
 
     def threadVoiceDifferentiate(self):
-        impl = DifferentiatedAudioTrimImpl()
-        impl.setConstructor(self)
-        while self.indexOfFileForDifferentiation < 500:
-            if self.indexOfFileForDifferentiation < len(self.recordedFilesNames):
-                VDifferentiation().differentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation], impl)
-                self.indexOfFileForDifferentiation += 1
-                self.isVoiceDifferentiated = False
-                # TODO: Call speech recognizing in thread
-                if self.speechRecognitionThread is None or self.isSpeechRecognized:
-                    print("Differentiation start")
-                    self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
-                    self.speechRecognitionThread.start()
-                # elif self.speechRecognitionThread is not None and self.isSpeechRecognized == False:
-                #     self.speechRecognitionThread.join()
-                #     self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
-                #     self.speechRecognitionThread.start()
+        if isButtonClicked == True:
+            impl = DifferentiatedAudioTrimImpl()
+            impl.setConstructor(self)
+            while self.indexOfFileForDifferentiation < 500:
+                if self.indexOfFileForDifferentiation < len(self.recordedFilesNames):
+                    VDifferentiation().differentiate(self.recordedFilesNames[self.indexOfFileForDifferentiation], isFake, impl)
+                    self.indexOfFileForDifferentiation += 1
+                    self.isVoiceDifferentiated = False
+                    # TODO: Call speech recognizing in thread
+                    if self.speechRecognitionThread is None or self.isSpeechRecognized:
+                        # print("Differentiation start")
+                        self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
+                        self.speechRecognitionThread.start()
+                    # elif self.speechRecognitionThread is not None and self.isSpeechRecognized == False:
+                    #     self.speechRecognitionThread.join()
+                    #     self.speechRecognitionThread = Thread(target=basr.threadRecognizeSpeech, args=())
+                    #     self.speechRecognitionThread.start()
 
     def threadRecognizeSpeech(self):
         impl = SpeechToTextImpl()
@@ -205,50 +404,111 @@ class SpeechToTextImpl(MTest.SpeechToTextListener):
 
     def doAfterTextRecognition(self, recognizedText, isLast=False):
         print("Result: ", recognizedText)
+        text_field.insert(tk.END, recognizedText+"\n\n")
         # recognizedObject = json.loads(recognizedText)
         # print("Result: ", recognizedObject["result"])
         # if isLast:
         #     self.exemplar.differentiatedAudioTrimList.pop(0)
         self.exemplar.isSpeechRecognized = True
 
+count = 0
+globCount = 0
 class DifferentiatedAudioTrimImpl(AudioTrimListener):
     exemplar = None
     def setConstructor(self, main_class_exemplar):
         self.exemplar = main_class_exemplar
 
     def doAfterTrimL(self, list_of_trimmed_audio: BaseAudioStreamReceiver):
+        global count
+        global globCount
         self.exemplar.differentiatedAudioTrimList.append(list_of_trimmed_audio)
+
+        if(isButtonClicked == True and isFake == True):
+            if(count == 2 or globCount == 0):
+                text_field.insert(tk.END, textArr[globCount] + "\n")
+                globCount = globCount + 1
+                count = 0
+            else:
+                count = count + 1
 
 class GetResult:
     def getRes(self, res):
         pass
 
+def doOnBtnClicked():
+    global isButtonClicked
+    global count
+    global globCount
+
+    basr = BaseAudioStreamReceiver()
+    thread = Thread(target=basr.threadedAudioStream, args=())
+    tVoiceDiff = Thread(target=basr.threadVoiceDifferentiate, args=())
+
+    if isButtonClicked == True:
+        button.configure(text="Run")
+        isButtonClicked = False
+        text_field.insert(tk.END, "Stopped")
+    else:
+        count = 0
+        globCount = 0
+        text_field.delete('1.0', 'end')
+        text_field.insert(tk.END, "Started...\n")
+        button.configure(text="Stop")
+        isButtonClicked = True
+
+        # text_field.insert(tk.END, "Clicked")
+        #
+        thread.start()
+        tVoiceDiff.start()
+
+        # thread.join()
+        # tVoiceDiff.join()
+
+def changeToOriginal():
+    global isFake
+    if(isFake == True):
+        isFake = False
+
+def standBy():
+    time.sleep(3)
+
 if __name__ == "__main__":
     basr = BaseAudioStreamReceiver()
     print("Start program")
+    #
+    # needCalibration = input("Нужно отколибровать точность?: [Y/N] ")
+    # if(needCalibration == "Y"):
+    #     isNoSpeechNum = input("Перводе значение(25;45): ")
+    #     basr.IS_NO_SPEECH_NUM = isNoSpeechNum
+    #
+    #     countOfRepeats = input("Второе значение(2;5): ")
+    #     basr.COUNT_OF_REPEATS = countOfRepeats
+    #
+    # language = input("Выберите язык, на который будет осуществляться перевод [R - русский язык, E - английский язык]: ")
+    # if(language == "R"):
+    #     basr.TRANSLATE_LANGUAGE = "R"
+    # elif(language == "E"):
+    #     basr.TRANSLATE_LANGUAGE = "E"
+    #
+    # print("Программа запустилась...")
+    #
+    #
+    # thread = Thread(target=basr.threadedAudioStream, args=())
+    # thread.start()
+    #
+    # tVoiceDiff = Thread(target=basr.threadVoiceDifferentiate, args=())
+    # tVoiceDiff.start()
+    #
+    # thread.join()
+    # tVoiceDiff.join()
 
-    needCalibration = input("Нужно отколибровать точность?: [Y/N] ")
-    if(needCalibration == "Y"):
-        isNoSpeechNum = input("Перводе значение(25;45): ")
-        basr.IS_NO_SPEECH_NUM = isNoSpeechNum
 
-        countOfRepeats = input("Второе значение(2;5): ")
-        basr.COUNT_OF_REPEATS = countOfRepeats
+# Привязка функций к кнопкам
+home_button.configure(command=show_first_part)
+settings_button.configure(command=show_second_part)
+translates_button.configure(command=show_third_part)
 
-    language = input("Выберите язык, на который будет осуществляться перевод [R - русский язык, E - английский язык]: ")
-    if(language == "R"):
-        basr.TRANSLATE_LANGUAGE = "R"
-    elif(language == "E"):
-        basr.TRANSLATE_LANGUAGE = "E"
+# Отображение первой части и кнопок
+show_first_part()
 
-    print("Программа запустилась...")
-
-
-    thread = Thread(target=basr.threadedAudioStream, args=())
-    thread.start()
-
-    tVoiceDiff = Thread(target=basr.threadVoiceDifferentiate, args=())
-    tVoiceDiff.start()
-
-    thread.join()
-    tVoiceDiff.join()
+root.mainloop()
