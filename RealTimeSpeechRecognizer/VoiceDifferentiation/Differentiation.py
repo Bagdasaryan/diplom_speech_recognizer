@@ -25,7 +25,7 @@ class VDifferentiation:
         # 5. print the result
         intervals = []
         for turn, _, speaker in diarization.itertracks(yield_label=True):
-            print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
+            # print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
             interv = [turn.start, turn.end]
             intervals.append(interv)
         self.trim_audio(intervals, fileName, fileName, listener)
@@ -41,8 +41,6 @@ class VDifferentiation:
             # extract the segment of the audio
             segment = audio[start_time * 1000:end_time * 1000]
 
-            print("Audio file: ", segment)
-
             # construct the output file path
             output_file_path_i = f"res_{output_file_path}_{i}.wav"
 
@@ -54,7 +52,10 @@ class VDifferentiation:
 
             file_name = "res_%s_%s"%(output_file_path, i)
 
-            self.save_to_opus(file_name)
+            try:
+                self.save_to_opus(file_name)
+            except:
+                print("An exception occurred")
 
         listener.doAfterTrimL(list_of_trimmed_audio)
 

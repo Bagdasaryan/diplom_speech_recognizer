@@ -37,6 +37,10 @@ class BaseAudioStreamReceiver:
     # Thread type
     speechRecognitionThread = None
 
+    IS_NO_SPEECH_NUM = 30
+    COUNT_OF_REPEATS = 3
+    TRANSLATE_LANGUAGE = "E"
+
     pAudio = pyaudio.PyAudio()
     stream = pAudio.open(
         format=FORMAT,
@@ -87,14 +91,14 @@ class BaseAudioStreamReceiver:
                 #     previousNum = isNoSpeech
 
                 #if isNoSpeech >= 40 and previousNum >= 40:
-                if isNoSpeech >= 35 and previousNum >= 35:
+                if isNoSpeech >= int(self.IS_NO_SPEECH_NUM) and previousNum >= int(self.IS_NO_SPEECH_NUM):
                     countOfRepeats += 1
                 else:
                     previousNum = isNoSpeech
                     countOfRepeats = 0
                     previousNumArr.append(isNoSpeech)
 
-                if countOfRepeats > 4:
+                if countOfRepeats > int(self.COUNT_OF_REPEATS):
                     # print("Speak doesn't exist")
                     # TODO: call frame to ogg writer function(frames[]) and continue loop
                     self.threadedEncodToOpus(self.frames)
@@ -184,10 +188,9 @@ class BaseAudioStreamReceiver:
         if len(self.differentiatedAudioTrimList) > 0:
             if self.isSpeechRecognized:
                 self.isSpeechRecognized = False
-                print("Call mFoo")
                 if len(self.recordedFilesNames) > 0 and self.indexOfRecognizedFile < len(self.recordedFilesNames):
                     # MTest.MTest().mFoo("%s" % self.recordedFilesNames[self.indexOfRecognizedFile], impl)
-                    MTest.MTest().mFoo(self.differentiatedAudioTrimList[self.indexOfRecognizedFile], impl)
+                    MTest.MTest().mFoo(self.differentiatedAudioTrimList[self.indexOfRecognizedFile], self.TRANSLATE_LANGUAGE, impl)
                     self.indexOfRecognizedFile += 1
                     # self.recordedFilesNames.pop(0)
             #     self.speechRecognitionThread.join()
@@ -216,10 +219,30 @@ class DifferentiatedAudioTrimImpl(AudioTrimListener):
     def doAfterTrimL(self, list_of_trimmed_audio: BaseAudioStreamReceiver):
         self.exemplar.differentiatedAudioTrimList.append(list_of_trimmed_audio)
 
+class GetResult:
+    def getRes(self, res):
+        pass
 
 if __name__ == "__main__":
-    print("Start program")
     basr = BaseAudioStreamReceiver()
+    print("Start program")
+
+    needCalibration = input("Нужно отколибровать точность?: [Y/N] ")
+    if(needCalibration == "Y"):
+        isNoSpeechNum = input("Перводе значение(25;45): ")
+        basr.IS_NO_SPEECH_NUM = isNoSpeechNum
+
+        countOfRepeats = input("Второе значение(2;5): ")
+        basr.COUNT_OF_REPEATS = countOfRepeats
+
+    language = input("Выберите язык, на который будет осуществляться перевод [R - русский язык, E - английский язык]: ")
+    if(language == "R"):
+        basr.TRANSLATE_LANGUAGE = "R"
+    elif(language == "E"):
+        basr.TRANSLATE_LANGUAGE = "E"
+
+    print("Программа запустилась...")
+
 
     thread = Thread(target=basr.threadedAudioStream, args=())
     thread.start()
